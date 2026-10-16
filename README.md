@@ -11,7 +11,7 @@ independently testable Python FastAPI microservices backed by PostgreSQL.
 | Phase | Service | Path | Status |
 |-------|---------|------|--------|
 | 1 | Identity & Access | [`services/identity-service`](services/identity-service/README.md) | Implemented |
-| 2 | Patient | — | Planned |
+| 2 | Patient | [`services/patient-service`](services/patient-service/README.md) | Implemented |
 | 3 | Provider | — | Planned |
 | 4 | Facility & Department | — | Planned |
 | 5 | Scheduling & Availability | — | Planned |
