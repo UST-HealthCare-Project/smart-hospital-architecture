@@ -15,7 +15,7 @@ independently testable Python FastAPI microservices backed by PostgreSQL.
 | 3 | Provider | [`services/provider-service`](services/provider-service/README.md) | Implemented |
 | 4 | Facility & Department | [`services/facility-service`](services/facility-service/README.md) | Implemented |
 | 5 | Scheduling & Availability | [`services/scheduling-service`](services/scheduling-service/README.md) | Implemented |
-| 6 | Appointment | — | Planned |
+| 6 | Appointment | [`services/appointment-service`](services/appointment-service/README.md) | Implemented |
 | 7 | Encounter / Visit | — | Planned |
 | 8 | Notification | — | Planned |
 
