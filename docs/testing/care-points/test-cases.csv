@@ -1,0 +1,152 @@
+id,ac,type,level,preconditions_and_input,expected_result,existing_asset,revised_in_self_review
+CP-1-1,AC-1,positive,API,"fee ₹10,000, balance 10,000; book with points 500","201; consultation_fee 10000, points_redeemed 500, net_fee 9500; ledger debit −500; balance 9500",EXTEND test_book_appointment,no
+CP-1-2,AC-1,positive,API,"fee ₹10,000, balance 10,000; book without points_to_redeem","201; points_redeemed 0, net_fee 10000; no ledger row; balance 10000",EXTEND test_book_appointment,no
+CP-1-3,"AC-1, AC-2",boundary,API,"fee ₹10,000, balance 10,000; points 0",201; same as CP-1-2 (0 = no redemption),EXTEND test_book_appointment,no
+CP-1-4,AC-1,negative,API,booking body with consultation_fee/net_fee/points_redeemed/balance sent by client,422 validation_error (extra_forbidden); no appointment; balance unchanged; no ledger or outbox row,EXTEND test_invalid_booking_is_422,no
+CP-1-5,AC-1,negative,API,booked appointment; reschedule body with points 100,422 extra_forbidden; fee fields and ledger unchanged,EXTEND test_invalid_reschedule_is_422,no
+CP-1-6,AC-1,negative,API,booked appointment; cancel / check-in body with points 100,"422; status, version and ledger unchanged",NEW,no
+CP-1-7,AC-1,positive,API,booked with points 500; GET by id and search as ADMIN,200; fee fields equal the create response,EXTEND test_get_appointment,no
+CP-2-1,AC-2,boundary,API,"fee ₹10,000, balance 10,000; points 90 (below-min, on step)",422 points_below_minimum; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-2-2,"AC-2, AC-3",boundary,API,"fee ₹10,000, balance 10,000; points 100 (min)",201; net 9900; debit −100; balance 9900,"NEW (uses book, booking_payload, points_lot)",no
+CP-2-3,"AC-2, AC-3",boundary,API,"fee ₹10,000, balance 10,000; points 110 (min+step)",201; net 9890; balance 9890,"NEW (uses book, booking_payload, points_lot)",no
+CP-2-4,AC-2,negative,API,"fee ₹10,000, balance 10,000; points 10",422 points_below_minimum; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-2-6,"AC-2, AC-3",negative,API,"fee ₹10,000, balance 10,000; points 1, 99 (off-step and below min)",422 points_below_minimum (takes precedence over the step rule); no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-2-U1,AC-2,boundary,Unit,min rule: points 90/100/110,False/True/True,NEW,no
+CP-3-3,AC-3,boundary,API,"fee ₹10,000, balance 10,000; points 101",422 invalid_points_step; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-4,AC-3,boundary,API,"fee ₹10,000, balance 10,000; points 109",422 invalid_points_step; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-6,AC-3,negative,API,"fee ₹10,000, balance 10,000; points 105, 2345",422 invalid_points_step; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-7,"AC-3, AC-4",boundary,API,"fee ₹10,000, balance 10,000; points 4990 (max-step)",201; net 5010; balance 5010,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-8,AC-3,boundary,API,"fee ₹10,000, balance 10,000; points 4999",422 invalid_points_step; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-9,"AC-3, AC-4",boundary,API,"fee ₹10,000, balance 10,000; points 5000 (max)",201; net 5000; balance 5000,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-10,AC-3,negative,API,"fee ₹10,000, balance 10,000; points −10, −100",422 validation_error; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-11,AC-3,negative,API,"fee ₹10,000, balance 10,000; points 100.5, 110.0",422 validation_error (Q1 default: strict int); no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-12,AC-3,negative,API,"fee ₹10,000, balance 10,000; points ""100"", true, [], {}",422 validation_error (Q2 default: strict); no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-13,AC-3,boundary,API,"fee ₹10,000, balance 10,000; points null",201; treated as omitted (Q3 default); no ledger row,"NEW (uses book, booking_payload, points_lot)",no
+CP-3-U1,AC-3,boundary,Unit,step rule: 100/101/109/110/4999/5000,True/False/False/True/False/True,NEW,no
+CP-4-3,AC-4,boundary,API,"fee ₹10,000; points 5010",422 exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-4,AC-4,boundary,API,"fee ₹500, balance 10,000; points 240",201; net 260; balance 9760,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-5,AC-4,boundary,API,fee ₹500; points 250 (cap),201; net 250; balance 9750,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-6,AC-4,boundary,API,fee ₹500; points 260,422 exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-7,AC-4,boundary,API,fee ₹510; points 240,201; net 270; one −240 debit; balance 9760,"NEW (uses book, booking_payload, points_lot)",yes
+CP-4-8,AC-4,boundary,API,fee ₹510; points 250 (cap; 255 rounded down),201; net 260; balance 9750,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-9,AC-4,boundary,API,fee ₹510; points 260,422 exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-10,AC-4,boundary,API,fee ₹200; points 100 (cap = min),201; net 100; balance 9900,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-11,AC-4,boundary,API,fee ₹200; points 110,422 exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-4-12,AC-4,negative,API,fee ₹510; points 255 (off-step and above cap) — order-of-checks case (Q6),"422 invalid_points_step (step is checked before max, Q6 default); no appointment; balance unchanged; no ledger or outbox row","NEW (uses book, booking_payload, points_lot)",yes
+CP-4-13,AC-4,negative,API,"fee ₹10,000, balance 20,000,000; points 10,000,000",422 exceeds_max_redemption (no 500); no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",yes
+CP-4-U1,AC-4,boundary,Unit,cap(fee) for 0/190/200/500/510/10000,0/90/100/250/250/5000,NEW,no
+CP-5-1,AC-5,negative,API,"fee ₹10,000, balance 490; points 500",409 insufficient_points; no appointment; balance 490; no ledger row,"NEW (uses book, booking_payload, points_lot)",no
+CP-5-2,AC-5,boundary,API,"fee ₹10,000, balance 500; points 500",201; balance 0,"NEW (uses book, booking_payload, points_lot)",no
+CP-5-3,AC-5,negative,API,"fee ₹10,000, patient with no ledger; points 100",409 insufficient_points; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-5-4,AC-5,positive,API,patient with no ledger; GET /patients/{id}/points as RECEPTIONIST,200; balance 0 (not 404),NEW,no
+CP-5-5,"AC-5, AC-14",negative,API,"balance 500, all expired; points 100",409 insufficient_points; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-5-6,AC-5,negative,API,499 points across 2 lots; points 500,409; neither lot changed,"NEW (uses book, booking_payload, points_lot)",no
+CP-6-1,AC-6,negative,API,"fee ₹0, balance 10,000; points 100",422 redemption_not_allowed; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-6-2,AC-6,negative,API,"fee ₹0; points 10, 95",422 redemption_not_allowed (fee-zero check takes precedence); no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-6-3,AC-6,positive,API,fee ₹0; points 0 / omitted,"201; consultation_fee 0, net_fee 0; no ledger row","NEW (uses book, booking_payload, points_lot)",no
+CP-7-1,AC-7,negative,API,"fee ₹10,000, balance 10,000; slot already booked; points 100","409 conflict; balance 10,000; no ledger row; outbox has 1 row (the first booking)",EXTEND test_conflicting_booking_writes_no_outbox_event,no
+CP-7-2,AC-7,negative,API,"fee ₹10,000, balance 10,000; add_event patched to raise; points 100",500 internal_error; no appointment; balance unchanged; no ledger or outbox row,EXTEND test_outbox_failure_rolls_back_the_booking,no
+CP-7-3,AC-7,negative,API,"fee ₹10,000, balance 10,000; ledger write patched to raise; points 100",500; no appointment; no outbox row; balance unchanged,NEW (outbox-failure helper pattern),no
+CP-7-4,"AC-7, AC-16",negative,API,"fee ₹10,000, balance 10,000; APPOINTMENTS_ENABLED off; points 100",503 feature_disabled; no appointment; balance unchanged; no ledger or outbox row,EXTEND test_flag_off_returns_documented_error_for_book_reschedule_cancel,no
+CP-7-5,AC-7,negative,API,"fee ₹10,000, balance 10,000; Scheduling fake available=False; points 100",409; no appointment; balance unchanged; no ledger or outbox row,EXTEND test_scheduling_unavailable_time_is_409_and_not_stored,no
+CP-8-1,AC-8,boundary,API,"fee ₹10,000, redeemed 100 (balance 9900); clock = start−23:59:59; cancel (decision-table R2)",200 CANCELLED; forfeit: balance 9900; no refund row; no zero-value row,"NEW (uses book, app.state.clock)",no
+CP-8-2,AC-8,boundary,API,as CP-8-1; start−23:59:59.999999,200 CANCELLED; balance 9900; 0 refund rows; 0 zero-value rows,NEW,yes
+CP-8-3,"AC-8, AC-10",boundary,API,as CP-8-1; start−24:00:00 exactly,"200; refund: one +100 row; balance 10,000",NEW,no
+CP-8-4,AC-8,boundary,API,as CP-8-1; start−24:00:01,"200 CANCELLED; exactly one +100 refund row; balance 10,000",NEW,yes
+CP-8-5,AC-8,positive,API,as CP-8-1; cancel at FIXED_NOW (largest Δ) (decision-table R1),"200 CANCELLED; exactly one +100 refund row; balance 10,000",EXTEND test_cancel_frees_the_slot,yes
+CP-8-6,AC-8,boundary,API,as CP-8-1; cancel at starts_at (Δ=0),200 CANCELLED; balance 9900; 0 refund rows; 0 zero-value rows,NEW,yes
+CP-8-7,AC-8,negative,API,as CP-8-1; cancel 1 s after starts_at (still BOOKED),200 CANCELLED; balance 9900; 0 refund rows; 0 zero-value rows,NEW,yes
+CP-8-8,AC-8,boundary,API,redeemed 0; cancel at Δ 25h and 1h (decision-table R3/R4),200; no ledger row in either case,NEW,no
+CP-8-U1,AC-8,boundary,Unit,refund rule Δ = 23:59:59 / 24:00:00 / 24:00:01,False/True/True,NEW,no
+CP-DT-5,AC-8,negative,API,"CHECKED_IN, P=100; cancel",409 conflict; no ledger row; balance 9900,EXTEND test_invalid_status_transition_is_409,no
+CP-DT-6,AC-8,negative,API,"COMPLETED, P=100; cancel","409 conflict; ledger = −100 debit + one +495 earn row (5% of net 9900); balance 10,395; 0 refund rows",EXTEND test_invalid_status_transition_is_409,yes
+CP-DT-7,AC-8,negative,API,"NO_SHOW, P=100; cancel",409; no ledger row; balance 9900,EXTEND test_invalid_status_transition_is_409,no
+CP-DT-8,AC-8,negative,API,"cancelled ≥24h (refunded), cancel again","409; no second refund; balance 10,000",EXTEND test_invalid_status_transition_is_409,no
+CP-DT-9,AC-8,negative,API,"P=0, each of CHECKED_IN/COMPLETED/NO_SHOW/CANCELLED; cancel",409; no ledger row,EXTEND test_invalid_status_transition_is_409,no
+CP-DT-10,AC-9,boundary,API,"P=100; booked at FIXED_NOW (S1 = at(4,9)); clock T = S1 − 3 d; reschedule to S2 = T + 23 h; cancel at T",200; forfeit (new starts_at decides); balance 9900,NEW,yes
+CP-DT-11,AC-9,boundary,API,"P=100; booked at FIXED_NOW (S1 = at(4,9)); clock T = S1 − 3 d; reschedule to S2 = T + 25 h; cancel at T",200; +100 refund,NEW,yes
+CP-DT-12,AC-9,boundary,API,"P=100; booked at FIXED_NOW (S1 = at(4,9)); clock T = S1 − 3 d; reschedule to S2 = T + 24 h exactly; cancel at T",200; +100 refund,NEW,yes
+CP-DT-13,AC-9,positive,API,P=100; reschedule (correct version),200; consultation_fee/points_redeemed/net_fee unchanged; no ledger row; balance 9900,EXTEND test_reschedule,no
+CP-9-1,AC-9,negative,API,P=100; reschedule onto a busy slot,409; fee fields unchanged; no ledger row,EXTEND test_reschedule_onto_busy_slot_is_409,no
+CP-10-1,AC-10,boundary,API,fee ₹0; book → check-in → complete,200 COMPLETED; earns 0; no ledger row,NEW (uses book),no
+CP-10-2,AC-10,boundary,API,"fee ₹200, redeemed 100 (net 100); complete",+5 earn row,EXTEND test_check_in_then_complete,no
+CP-10-3,AC-10,boundary,API,"fee ₹190, no redemption (net 190); complete",+9 earn row (9.5 → 9),NEW,no
+CP-10-4,AC-10,boundary,API,"fee ₹500, redeemed 250 (net 250); complete",+12 (12.5 → 12),NEW,no
+CP-10-5,AC-10,boundary,API,"fee ₹510, no redemption (net 510); complete",+25 (25.5 → 25),NEW,no
+CP-10-6,AC-10,boundary,API,"fee ₹510, redeemed 250 (net 260); complete",+13,NEW,no
+CP-10-7,AC-10,boundary,API,"fee ₹200, no redemption (net 200); complete",+10,NEW,no
+CP-10-8,AC-10,boundary,API,"fee ₹10,000, redeemed 5000 (net 5000); complete",+250,NEW,no
+CP-10-9,AC-10,boundary,API,"fee ₹10,000, no redemption (net 10,000); complete",+500,NEW,no
+CP-10-10,AC-10,negative,API,"fee ₹10,000, redeemed 100; no-show",200 NO_SHOW; earns 0; no refund; balance 9900,EXTEND test_no_show_frees_the_slot,no
+CP-10-11,AC-10,negative,API,"any fee; book, then check-in only",earns 0 at booking and at check-in; no earn row,EXTEND test_status_transitions_do_not_emit_events,no
+CP-10-13,AC-10,negative,API,completed; complete again,409 conflict; exactly one earn row,EXTEND test_invalid_status_transition_is_409,no
+CP-10-14,AC-10,boundary,API,"(G-A) fee ₹19 / ₹20, no redemption; complete",earns 0 / +1. Needs ₹19/₹20 added to the test fee config.,NEW,no
+CP-10-U1,AC-10,boundary,Unit,earn(net) for 0/19/20/190/250/510/10000,0/0/1/9/12/25/500,NEW,no
+CP-14-1,AC-14,boundary,API,"lot 100 earned at E; clock E; fee ₹10,000; points 100; starts_at = clock + 7 d; patient = seeded patient",201; one −100 debit; lot remaining 0; balance 0,"NEW (uses points_lot, app.state.clock)",yes
+CP-14-2,AC-14,boundary,API,as CP-14-1; clock E+1d; starts_at = clock + 7 d; patient = seeded patient,201; one −100 debit; lot remaining 0; balance 0,NEW,yes
+CP-14-3,AC-14,boundary,API,clock E+364d; starts_at = clock + 7 d; patient = seeded patient,201; one −100 debit; lot remaining 0; balance 0,NEW,yes
+CP-14-4a,AC-14,boundary,API,clock E+365d exactly; starts_at = clock + 7 d; patient = seeded patient,201; one −100 debit; lot remaining 0; balance 0,NEW,yes
+CP-14-4b,AC-14,boundary,API,clock E+365d+15:59:59; starts_at = clock + 7 d,409 insufficient_points; no appointment; balance unchanged; no ledger or outbox row (Q4 default),NEW,yes
+CP-14-5,AC-14,boundary,API,clock E+366d; starts_at = clock + 7 d,409 insufficient_points; no appointment; balance unchanged; no ledger or outbox row,NEW,yes
+CP-14-6,AC-14,boundary,API,lot 100 earned 2031-03-01T08:00Z; clock 2032-02-29T08:00Z / 2032-03-01T08:00Z; starts_at = clock + 7 d,"201, one −100 debit, balance 0 / 409 insufficient_points; no appointment; balance unchanged; no ledger or outbox row",NEW,yes
+CP-14-7,AC-14,positive,API,lot 100; GET points at day 365 / 366,200; available 100 / 0,NEW,no
+CP-14-8,AC-14,positive,API,"lots A=100 (day −300), B=200 (day −10); points 150","201; A=0, B=150 left; debit order A then B",NEW,no
+CP-14-9,AC-14,boundary,API,"seed A=100 (day −300), B=200 (day −10); redeem 150 at FIXED_NOW; then clock = A's day 366; GET points","available 150. If B were consumed first, A's 100 would expire and leave 50.",NEW,yes
+CP-14-11,AC-14,negative,API,"A=100 expired, B=100 valid; points 100",201 from B; A not counted,NEW,no
+CP-14-13,AC-14,positive,API,"A, B; points 150; cancel ≥24h",+150 refund returned to A (100) and B (50) with their original expiry (Q5 default),NEW,no
+CP-14-U1,AC-14,boundary,Unit,expiry check at E+365d / E+365d+1s / E+366d; FIFO allocation,valid/expired/expired; oldest lot first,NEW,no
+CP-INT-1,AC-4,negative,API,"fee ₹190, balance 10,000; points 100",422 exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-INT-2,AC-2,negative,API,fee ₹190; points 90 (= cap),422 points_below_minimum; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",no
+CP-INT-3,AC-2,negative,API,fee ₹190; points 10,422 points_below_minimum; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",yes
+CP-INT-4,AC-2,negative,API,fee ₹190; points 95,422 points_below_minimum; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",yes
+CP-INT-5,AC-4,negative,API,fee ₹190; points 110,422 exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",yes
+CP-INT-6,AC-1,positive,API,fee ₹190; points 0 / omitted,"201; fee 190, net 190; no ledger row","NEW (uses book, booking_payload, points_lot)",no
+CP-INT-7,AC-4,negative,API,fee ₹190; sweep points 10..200 step 10,every value 422; never 201; balance unchanged,"NEW (uses book, booking_payload, points_lot)",no
+CP-INT-9,AC-4,negative,API,fee ₹200; points 90 / 110,422 points_below_minimum / exceeds_max_redemption; no appointment; balance unchanged; no ledger or outbox row,"NEW (uses book, booking_payload, points_lot)",yes
+CP-INT-13,AC-5,negative,API,"fee ₹190, balance 0; points 100","422 exceeds_max_redemption (validation before balance, Q6 default); no appointment; balance unchanged; no ledger or outbox row","NEW (uses book, booking_payload, points_lot)",no
+CP-NEG-4,AC-12,negative,API,GET /patients/not-a-uuid/points as ADMIN,422 validation_error,NEW,no
+CP-NEG-5,AC-15,negative,API,"seed balance 9,876; fee ₹10,000; points 4321 (off-step, within cap)","422 invalid_points_step; ""4321"" and ""9876"" absent from the response body",EXTEND test_validation_errors_do_not_echo_submitted_values,yes
+CP-NEG-11,AC-16,positive,Unit,default settings; .env.example,points_enabled False; POINTS_ENABLED=false,EXTEND test_valid_configuration_defaults + test_env_example_has_flag_off_and_placeholders_only,no
+CP-NEG-11b,AC-16,negative,Unit,"POINTS_ENABLED=""maybe""",ConfigurationError mentioning points_enabled,EXTEND test_invalid_configuration_fails_fast,no
+CP-NEG-12,AC-16,negative,API,"fee ₹10,000, balance 10,000; POINTS off; points 100",503 feature_disabled; no appointment; balance unchanged; no ledger or outbox row,NEW (build_app(make_settings(points_enabled=False))),no
+CP-NEG-13,AC-16,positive,API,POINTS off; points 0 / omitted,201; fee fields still shown (Q7 default); no ledger row,NEW,no
+CP-NEG-14,AC-16,negative,API,POINTS off; points 99,503 feature_disabled (flag checked before validation); no appointment; balance unchanged; no ledger or outbox row,NEW,yes
+CP-NEG-16,AC-16,positive,API,redeemed 100 while on; POINTS turned off; cancel ≥24h,200; +100 refund (Q8 default),NEW,no
+CP-NEG-17,AC-16,positive,API,POINTS off; complete a ₹200 booking,200; +10 earn (Q8 default),NEW,no
+CP-NEG-18,AC-16,positive,API,"POINTS off; GET points as ADMIN (seed 10,000, one −500 debit)",200; available balance 9500 (Q8 default),NEW,yes
+CP-NEG-19,AC-16,negative,API,POINTS off; no token / DOCTOR; book with points 100,401 / 403 (auth checked before flag); no appointment; balance unchanged; no ledger or outbox row,EXTEND test_authentication_and_authorization_run_before_the_flag,yes
+CP-NEG-23,AC-13,negative,PostgreSQL,"balance 100; 2 threads, different slots, points 100 each; barrier placed before ledger access; distinct providers/slots; plus 5 unbarriered repeats","[201, 409 insufficient_points]; balance 0; one debit; never negative",EXTEND test_concurrency_postgres.py (_race + Barrier pattern),yes
+CP-NEG-24,AC-13,negative,PostgreSQL,"balance 500; 10 threads, points 100 each, different slots; distinct providers/slots; plus 5 unbarriered repeats",exactly 5×201 and 5×409; balance 0; debits sum to 500,NEW (uses _race),yes
+CP-NEG-25,"AC-13, AC-11",negative,PostgreSQL,"patients P1, P2 (balance 100 each); 2 threads, same provider and slot, points 100 each; pre-check barrier as in the existing test","[201, 409 conflict]; exactly one −100 debit (winner's patient); loser balance 100; 1 appointment, 1 outbox row",EXTEND test_exclusion_constraint_is_final_authority_when_precheck_is_bypassed,yes
+CP-NEG-26,AC-13,negative,PostgreSQL,"redeemed 100; 2 concurrent cancels (≥24h), same version; distinct providers/slots; plus 5 unbarriered repeats","[200, 409]; exactly one +100 refund",EXTEND test_concurrent_cancels_with_same_version_one_wins,yes
+CP-NEG-26b,AC-13,negative,PostgreSQL,Only if the design adds a DB-level non-negative guard (K1): raw ledger insert that would take balance 100 to −100,"IntegrityError naming the guard; balance 100. If the design uses row locking only, delete this case and rely on CP-NEG-23/24.",NEW (_row-style raw insert pattern),yes
+CP-11-1,AC-11,regression,API,points omitted / 100: overlapping bookings for the same provider,409 conflict in both modes; no debit on 409,EXTEND test_overlapping_booking_for_same_provider_is_409 (parametrise points),no
+CP-11-2,AC-11,regression,API,points omitted / 100: adjacent slots and another provider,201 in both modes; points mode: one −100 debit per booking,EXTEND test_adjacent_and_other_provider_bookings_are_allowed,yes
+CP-11-3,AC-11,regression,API,points omitted / 100: COMPLETED still occupies the slot,409 in both modes; points mode: ledger and balance unchanged by the rejected call,EXTEND test_completed_appointment_still_occupies_the_slot,yes
+CP-11-4,AC-11,regression,API,points omitted / 100: invalid transitions,409 in both modes (same 8 pairs); points mode: ledger and balance unchanged by the rejected call,EXTEND test_invalid_status_transition_is_409,yes
+CP-11-5,AC-11,regression,API,"advice on, points 100; run (a) fake.available=True and (b) fake.available=False","(a) 201 + one −100 debit; (b) 409 + no appointment; balance unchanged; no ledger or outbox row; in both, fake called once (secondary check)",EXTEND test_booking_consults_scheduling_when_enabled,yes
+CP-11-6,AC-11,regression,API,"advice says available, DB conflict, points 100",409; no debit,EXTEND test_database_stays_final_authority_when_scheduling_says_available,no
+CP-11-9,AC-11,regression,API,"booking validation rules with points 100 (past start, <5 min, naive time)",Same 422 as without points; no debit,EXTEND test_invalid_booking_is_422 / test_booking_in_the_past_is_422,no
+CP-NEG-29,AC-12,positive,API,"ADMIN, RECEPTIONIST; GET /patients/{id}/points","200; available balance = seeded 10,000 − debits (e.g. 9500 after CP-1-1); no other patients' data",EXTEND test_allowed_roles_pass_authorization (add route to ENDPOINTS),yes
+CP-NEG-30,AC-12,negative,API,"DOCTOR, READ_ONLY; same","403; body exactly {""error"":{""code"":""forbidden"",""message"":""Insufficient permissions""}}; no balance in body",EXTEND test_wrong_role_is_403 (via ENDPOINTS),yes
+CP-NEG-31,AC-12,negative,API,no / invalid / expired token; same,401 + WWW-Authenticate,EXTEND test_missing_token_is_401 / test_invalid_tokens_are_401 / test_expired_token_is_401_on_every_endpoint,no
+CP-NEG-32,AC-12,negative,API,"DOCTOR; GET, search, check-in/complete/no-show responses",200; no consultation_fee/points_redeemed/net_fee; exactly the current 13 keys,EXTEND test_get_appointment (planned update),no
+CP-NEG-33,AC-12,positive,API,"ADMIN, RECEPTIONIST; same responses",consultation_fee/points_redeemed/net_fee equal the create response (10000/500/9500),NEW,yes
+CP-NEG-34,AC-12,boundary,API,"roles [DOCTOR, RECEPTIONIST]; GET appointment",fee fields shown (Q9 default),NEW,no
+CP-NEG-36,AC-12,negative,API,role in header/query/body + points,403 (caller-supplied roles ignored); no appointment; balance unchanged; no ledger or outbox row,EXTEND test_caller_supplied_roles_are_ignored,yes
+CP-15-1,AC-15,negative,API,"seed balance 86,420; fee ₹10,000; points 500 (balance 85,920); then refund, earn, GET points, 409 insufficient; caplog",Strings 86420/85920/9500 and the keys balance/consultation_fee/net_fee/points_redeemed absent from every log record,EXTEND test_requests_never_log_tokens_or_request_values,yes
+CP-15-2,AC-15,negative,API,"outbox after a points booking, reschedule and cancel",Payload key set exactly the current 10 keys; no amounts,EXTEND test_outbox_events_are_written_with_each_change,no
+CP-15-3,AC-15,negative,API,request log for GET /patients/{id}/points,route = endpoint name; patient id absent,EXTEND test_request_log_uses_endpoint_name_not_raw_path,no
+CP-17-1,AC-17,positive,Migration,SQLite: upgrade → downgrade −1 → upgrade → base,Ledger table(s) created and dropped; alembic check clean; no FKs to other services,EXTEND test_migrations_upgrade_and_downgrade_sqlite (TABLES += ledger),no
+CP-17-2,AC-17,positive,Migration,PostgreSQL round trip,"As CP-17-1, plus exclusion constraint still present",EXTEND test_migrations_upgrade_and_downgrade_postgresql,no
+CP-17-3,AC-17,negative,Migration,Additive check: compare appointments columns before and after the upgrade,Existing columns unchanged; new columns nullable or defaulted; downgrade removes only new objects,NEW,no
+CP-17-4,AC-17,negative,Migration,Downgrade with ledger rows present (test DB only),Downgrade succeeds; appointments data intact,NEW,no
+CP-3-P1,"AC-3, AC-2",positive,API,"fee ₹10,000, balance 10,000; points 300 (mid-range, on step)",201; net 9700; debit −300; balance 9700,"NEW (uses book, booking_payload, points_lot)",yes
+CP-4-P1,AC-4,positive,API,"fee ₹500, balance 10,000; points 150 (well under cap 250)",201; net 350; balance 9850,"NEW (uses book, booking_payload, points_lot)",no
+CP-7-P1,AC-7,positive,API,"fee ₹10,000, balance 10,000; points 500; successful booking","201; appointment row, ledger debit (references the appointment id) and AppointmentCreated outbox row all committed; balance 9500",EXTEND test_outbox_events_are_written_with_each_change,no
+CP-10-P1,AC-10,positive,API,"fee ₹500, no redemption; book → check-in → complete; GET points",200 COMPLETED; +25 earn lot with earned_at = completion clock; GET shows +25,EXTEND test_check_in_then_complete,no
+CP-11-N1,AC-11,negative,API,balance 0; book slot X with points 100 (409 insufficient_points); then book X without points,"409, then 201; the rejected points booking did not hold the slot",NEW,no
+CP-11-N2,AC-11,negative,API,book slot X with points 101 (422 invalid_points_step); then another patient books X,"422, then 201",NEW,no
+CP-11-P1,AC-11,positive,API,"balance 10,000; book free slot X with points 100, then book an overlapping slot without points","201, then 409 conflict; the points booking occupies X exactly like a non-points booking; one debit",NEW,no
+CP-13-P1,AC-13,positive,PostgreSQL,"balance 200; 2 threads, different slots, points 100 each (barrier placed before ledger access); distinct providers/slots; plus 5 unbarriered repeats",never insufficient_points (balance was enough); balance = 200 − 100 × (number of 201s) ≥ 0; one debit per 201. Q10: must both succeed?,NEW (uses _race + Barrier),yes
+CP-15-P1,AC-15,positive,API,points booking (points 500),"201; AppointmentCreated outbox row emitted with the standard 10-key payload (event still produced, no amount keys)",EXTEND test_outbox_events_are_written_with_each_change,no
